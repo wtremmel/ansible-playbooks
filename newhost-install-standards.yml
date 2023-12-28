@@ -1,0 +1,29 @@
+---
+- name: Install Standards
+  hosts: newhost
+  remote_user: root
+
+  tasks:
+          - name: apt update and upgrade
+            become: true
+            apt:
+                    autoclean: yes
+                    autoremove: yes
+                    update_cache: yes
+                    force_apt_get: yes
+                    upgrade: "safe"
+            register: packages_upgraded
+
+          - debug: var=packages_upgraded.stdout_lines
+          - debug: var=packages_upgraded.stderr_lines
+
+          - name: Install missing packages
+            become: true
+            apt:
+              pkg:
+                - sudo
+                - screen
+                - net-tools
+              state: present
+
+

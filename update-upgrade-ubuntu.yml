@@ -1,0 +1,20 @@
+---
+- name: update ubuntu hosts
+  hosts: ubuntu
+  remote_user: ansible
+
+  tasks:
+          - name: apt update and upgrade
+            become: true
+            apt:
+                    autoclean: yes
+                    autoremove: yes
+                    update_cache: yes
+                    force_apt_get: yes
+                    upgrade: "safe"
+            register: packages_upgraded
+
+          - debug: var=packages_upgraded.stdout_lines
+          - debug: var=packages_upgraded.stderr_lines
+
+

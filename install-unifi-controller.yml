@@ -1,0 +1,86 @@
+---
+- name: Install Netbox
+  hosts: newhost
+  remote_user: root
+
+# 
+# Memory: 2G
+# Disk: just /, 10G
+# CPUs: 2
+#
+  tasks:
+          - name: apt update and upgrade
+            become: true
+            apt:
+                    autoclean: yes
+                    autoremove: yes
+                    update_cache: yes
+                    force_apt_get: yes
+                    upgrade: "safe"
+            register: packages_upgraded
+
+          - debug: var=packages_upgraded.stdout_lines
+          - debug: var=packages_upgraded.stderr_lines
+
+          - name: Install missing packages
+            become: true
+            apt:
+              pkg:
+                - apt-transport-https
+                - ca-certificates
+                - gpg
+                - iptables
+                - iptables-persistent
+              state: present
+          - name: copy certificate files
+            become: true
+            ansible.builtin.copy:
+              dest: /etc/ssl
+              src: /home/fw01/certificates/-.ch5.garf.de
+              mode: preserve
+
+          - name: add repository key for unifi
+            become: true
+            ansible.builtin.apt_key:
+              url: https://dl.ui.com/unifi/unifi-repo.gpg
+
+          - name: add repository key for mongo
+            become: true
+            ansible.builtin.apt_key:
+              url: https://www.mongodb.org/static/pgp/server-4.4.pub
+
+          - name: add repositories for unifi
+            become: true
+            ansible.builtin.apt_repository:
+              repo: deb [arch=amd64] https://www.ui.com/downloads/unifi/debian stable ubiquiti
+          - name: add repositories for mongo
+            become: true
+            ansible.builtin.apt_repository:
+              repo: deb https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.4 multiverse
+
+          - name: install old ssl package
+            become: true
+            ansible.builtin.apt:
+              deb: http://ftp.de.debian.org/debian/pool/main/o/openssl/libssl1.1_1.1.1w-0+deb11u1_amd64.deb
+
+          - name: Install mongo and unifi
+            become: true
+            apt:
+              pkg:
+                - mongodb-org-server
+                - unifi
+
+          - name: redirect using iptables
+            become: true
+            ansible.builtin.iptables:
+              chain: PREROUTING
+              destination_port: 443
+              jump: REDIRECT
+              protocol: tcp
+              table: nat
+              to_ports: 8443
+              ip_version: "{{ item }}"
+            with_list:
+              - ipv4
+              - ipv6
+

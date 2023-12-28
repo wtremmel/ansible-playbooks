@@ -1,0 +1,166 @@
+---
+- name: Install Netbox
+  hosts: newhost
+  remote_user: root
+
+# Netbox needs a container with "nesting" enabled
+# Memory: 2G
+# Disk: just /, 10G
+# CPUs: 2
+#
+  tasks:
+          - name: apt update and upgrade
+            become: true
+            apt:
+                    autoclean: yes
+                    autoremove: yes
+                    update_cache: yes
+                    force_apt_get: yes
+                    upgrade: "safe"
+            register: packages_upgraded
+
+          - debug: var=packages_upgraded.stdout_lines
+          - debug: var=packages_upgraded.stderr_lines
+
+          - name: Install missing packages
+            become: true
+            apt:
+              pkg:
+                - postgresql
+                - redis-server
+                - python3 
+                - python3-pip 
+                - python3-venv 
+                - python3-dev 
+                - build-essential 
+                - libxml2-dev 
+                - libxslt1-dev 
+                - libffi-dev 
+                - libpq-dev 
+                - libssl-dev 
+                - zlib1g-dev
+                - git
+                - nginx
+              state: present
+          - name: copy certificate files
+            become: true
+            ansible.builtin.copy:
+              dest: /etc/ssl
+              src: /home/fw01/certificates/-.ch5.garf.de
+              mode: preserve
+          - name: "Create group"
+            become: true
+            group:
+              name: "netbox"
+              system: true
+
+          - name: "Create user "
+            become: true
+            user:
+              name: "netbox"
+              shell: "/bin/bash"
+              group: "netbox"
+              system: true
+
+          - name: Create directory for netbox
+            become: true
+            ansible.builtin.file:
+              path: /opt/netbox
+              state: directory
+              mode: '0755'
+
+
+          - name: Clone Netbox
+            become: true
+            ansible.builtin.git:
+              dest: /opt/netbox
+              repo: 'https://github.com/netbox-community/netbox.git'
+              depth: 1
+              clone: yes
+              update: no
+              single_branch: yes
+              version: master
+
+          - name: copy config file
+            become: true
+            ansible.builtin.copy:
+              src: /opt/netbox/netbox/netbox/configuration_example.py
+              dest: /opt/netbox/netbox/netbox/configuration.py
+              force: false
+              remote_src: true
+
+          - name: copy gunicorn file
+            become: true
+            ansible.builtin.copy:
+              src: /opt/netbox/contrib/gunicorn.py
+              dest: /opt/netbox/gunicorn.py
+              force: false
+              remote_src: true
+
+          - name: copy systemd files
+            become: true
+            ansible.builtin.copy:
+              src: "{{ item }}"
+              dest: /etc/systemd/system/
+              force: false
+              remote_src: true
+            with_fileglob:
+              - "/opt/netbox/contrib/*.service"
+
+          - name: Chown netbox directory
+            become: true
+            ansible.builtin.file:
+              path: /opt/netbox/netbox
+              owner: netbox
+              group: netbox
+              recurse: true
+          - name: link housekeeping
+            become: true
+            ansible.builtin.file:
+              src: /opt/netbox/contrib/netbox-housekeeping.sh
+              path: /etc/cron.daily/netbox-housekeeping
+              state: link
+
+          - name: copy nginx file
+            become: true
+            ansible.builtin.copy:
+              src: /opt/netbox/contrib/nginx.conf
+              dest: /etc/nginx/sites-available/netbox
+              force: false
+              remote_src: true
+          - name: delete default file
+            become: true
+            ansible.builtin.file:
+              path: /etc/nginx/sites-enabled/default
+              state: absent
+          - name: link netbox file
+            become: true
+            ansible.builtin.file:
+              src: /etc/nginx/sites-available/netbox
+              path: /etc/nginx/sites-enabled/netbox
+              state: link
+          - name: "change domain name"
+            become: true
+            lineinfile:
+              dest: /etc/nginx/sites-enabled/netbox
+              state: "present"
+              search_string: 'netbox.example.com'
+              line: '    server_name netbox.ch5.garf.de;'
+          - name: "change certificate name"
+            become: true
+            lineinfile:
+              dest: /etc/nginx/sites-enabled/netbox
+              state: "present"
+              search_string: '/etc/ssl/certs/netbox.crt'
+              line: '    ssl_certificate /etc/ssl/-.ch5.garf.de/fullchain.pem;'
+          - name: "change key name"
+            become: true
+            lineinfile:
+              dest: /etc/nginx/sites-enabled/netbox
+              state: "present"
+              search_string: '/etc/ssl/private/netbox.key'
+              line: '    ssl_certificate_key /etc/ssl/-.ch5.garf.de/key.pem;'
+
+
+
+

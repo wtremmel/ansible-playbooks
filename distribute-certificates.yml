@@ -1,0 +1,10 @@
+---
+- hosts: newhost
+  remote_user: ansible
+  tasks:
+    - name: copy certificate files
+      become: true
+      ansible.builtin.copy:
+        dest: /etc/ssl
+        src: /home/fw01/certificates/-.ch5.garf.de
+        mode: preserve

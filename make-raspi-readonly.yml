@@ -1,0 +1,25 @@
+---
+- name: make raspi filesystem readonly
+  hosts: raspi
+  remote_user: pi
+
+  tasks:
+          - name: check if overlay file exists
+            find:
+                    paths: /boot/
+                    patterns: 'initrd.img-*-overlay'
+                    recurse: no
+            register: find_result
+
+          - name: enable overlay filesystem
+            become: true
+            command: raspi-config nonint enable_overlayfs
+            args:
+                    creates: /boot/initrd.img-*-overlay
+            when: find_result.matched == 0
+
+          - name: reboot remote system
+            become: true
+            reboot:
+                    reboot_timeout: 600
+            when: find_result.matched == 0

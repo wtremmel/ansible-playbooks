@@ -1,0 +1,19 @@
+---
+- name: copy server certificate
+  hosts: raspberrymatic
+  remote_user: root
+  vars:
+          ansible_remote_tmp: /tmp
+
+  tasks:
+          - name: copy server.pem
+            become: true
+            ansible.builtin.copy:
+              src: /home/fw01/certificates/-.ch5.garf.de/server.pem
+              dest: /usr/local/etc/config/server.pem
+              owner: root
+              group: root
+              mode: '0600'
+
+
+

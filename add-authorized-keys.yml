@@ -1,0 +1,35 @@
+---
+- name: update raspis
+  hosts: raspi
+  remote_user: pi
+
+  tasks:
+          - name: add first authorized key
+            become: true
+            ansible.posix.authorized_key:
+              user: root
+              state: present
+              key: "{{ lookup('file', '/home/tremmel/.ssh/id_ed25519_sk-usbAkey.pub') }}"
+
+          - name: add second authorized key
+            become: true
+            ansible.posix.authorized_key:
+              user: root
+              state: present
+              key: "{{ lookup('file', '/home/tremmel/.ssh/id_ed25519_sk-usbckey.pub') }}"
+
+          - name: add first authorized key
+            become: true
+            ansible.posix.authorized_key:
+              user: pi
+              state: present
+              key: "{{ lookup('file', '/home/tremmel/.ssh/id_ed25519_sk-usbAkey.pub') }}"
+
+          - name: add second authorized key
+            become: true
+            ansible.posix.authorized_key:
+              user: pi
+              state: present
+              key: "{{ lookup('file', '/home/tremmel/.ssh/id_ed25519_sk-usbckey.pub') }}"
+
+

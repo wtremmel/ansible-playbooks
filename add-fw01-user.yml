@@ -1,0 +1,29 @@
+---
+- hosts: "all"
+  vars:
+          users:
+                  - fw01
+  tasks:
+          - name: "Create user account"
+            become: yes
+            user:
+                    name: "{{ item }}"
+                    groups: "root,operator"
+            with_items: "{{ users }}"
+
+          - name: "Add authorized keys"
+            become: yes
+            authorized_key:
+                    user: "{{ item }}"
+                    key: "{{ lookup('file', '/home/' + item + '/.ssh/' + item + '.pub') }}"
+            with_items: "{{ users }}"
+
+          - name: "Create certificate directory"
+            become: yes
+            file:
+                    state: directory
+                    owner: fw01
+                    group: operator
+                    mode: 0775
+                    path: "{{ '/home/' + item + '/certificates' }}"
+            with_items: "{{ users }}"

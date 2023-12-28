@@ -1,0 +1,71 @@
+---
+- name: update raspis
+  hosts: raspi
+  remote_user: pi
+
+  tasks:
+          - name: check if overlay file exists
+            find:
+                    paths: /boot/
+                    patterns: 'initrd.img-*-overlay'
+                    recurse: no
+            register: find_result
+
+          - name: disable overlay filesystem
+            become: true
+            command: raspi-config nonint disable_overlayfs
+            args:
+                    removes: /boot/initrd.img-*-overlay
+            when: find_result.matched > 0
+
+          - name: reboot remote system
+            become: true
+            reboot:
+                    reboot_timeout: 600
+            when: find_result.matched > 0
+
+          - name: apt update and upgrade
+            become: true
+            apt:
+                    autoclean: yes
+                    autoremove: yes
+                    update_cache: yes
+                    force_apt_get: yes
+                    upgrade: "safe"
+            register: packages_upgraded
+
+          - debug: var=packages_upgraded.stdout_lines
+          - debug: var=packages_upgraded.stderr_lines
+
+          - name: add first authorized key
+            become: true
+            ansible.posix.authorized_key:
+              user: 
+                - root
+                - pi
+              state: present
+              key: "{{ lookup('file', '/home/tremmel/.ssh/id_ed25519_sk-usbAkey.pub') }}"
+
+          - name: add second authorized key
+            become: true
+            ansible.posix.authorized_key:
+              user: 
+                - root
+                - pi
+              state: present
+              key: "{{ lookup('file', '/home/tremmel/.ssh/id_ed25519_sk-usbckey.pub') }}"
+
+          - name: enable overlay file system
+            become: true
+            command: raspi-config nonint enable_overlayfs
+            args:
+                    creates: /boot/initrd.img-*-overlay
+            when: find_result.matched > 0
+
+          - name: reboot remote system
+            become: true
+            reboot:
+                    reboot_timeout: 600
+            when: find_result.matched > 0
+
+

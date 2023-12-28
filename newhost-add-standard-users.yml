@@ -1,0 +1,40 @@
+---
+- hosts: newhost
+  remote_user: root
+  vars:
+          users:
+                  - wtremmel
+                  - ansible
+  tasks:
+          - name: "Create user accounts and add users to groups"
+            become: true
+            user:
+                    name: "{{ item }}"
+                    shell: "/bin/bash"
+                    groups: "adm,sudo,dialout"
+            with_items: "{{ users }}"
+          - name: "Add ssh keys ansible"
+            become: true
+            authorized_key:
+                    user: ansible
+                    key: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}"
+          - name: "Add ssh keys wtremmel"
+            become: true
+            authorized_key:
+                    user: wtremmel
+                    key: "{{ lookup('file', '/home/tremmel/.ssh/standard-authorized_keys') }}"
+                    state: present
+                    exclusive: yes
+          - name: "Add ssh keys for root"
+            become: true
+            authorized_key:
+                    user: root
+                    key: "{{ lookup('file', '/home/tremmel/.ssh/standard-authorized_keys') }}"
+                    state: present
+          - name: "modify sudoers"
+            become: true
+            lineinfile:
+                    dest: "/etc/sudoers"
+                    state: "present"
+                    regexp: "^%adm"
+                    line: "%adm ALL=(ALL) NOPASSWD: ALL"
