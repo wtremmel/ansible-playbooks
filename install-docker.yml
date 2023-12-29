@@ -1,0 +1,65 @@
+---
+- name: Install Netbox
+  hosts: newhost
+  remote_user: root
+
+# 
+# Memory: 2G
+# Disk: just /, 10G
+# CPUs: 2
+#
+  tasks:
+          - name: apt update and upgrade
+            become: true
+            apt:
+                    autoclean: yes
+                    autoremove: yes
+                    update_cache: yes
+                    force_apt_get: yes
+                    upgrade: "safe"
+            register: packages_upgraded
+
+          - debug: var=packages_upgraded.stdout_lines
+          - debug: var=packages_upgraded.stderr_lines
+
+          - name: Install missing packages
+            become: true
+            apt:
+              pkg:
+                - ca-certificates
+                - gpg
+                - curl
+              state: present
+          - name: copy certificate files
+            become: true
+            ansible.builtin.copy:
+              dest: /etc/ssl
+              src: /home/fw01/certificates/-.ch5.garf.de
+              mode: preserve
+
+          - name: add repository key for docker
+            become: true
+            ansible.builtin.apt_key:
+              url: https://download.docker.com/linux/debian/gpg
+
+          - name: add repositories for docker
+            become: true
+            ansible.builtin.apt_repository:
+              repo: deb [arch=amd64 ] https://download.docker.com/linux/debian bookworm stable
+
+          - name: Install docker
+            become: true
+            apt:
+              pkg:
+                - docker-ce
+                - docker-ce-cli
+                - containerd.io 
+                - docker-buildx-plugin
+                - docker-compose-plugin
+
+          - name: add wtremmel to docker group
+            become: true
+            user:
+              groups: docker
+              append: true
+              user: wtremmel
