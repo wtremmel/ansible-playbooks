@@ -1,0 +1,77 @@
+---
+- name: Install Netbox
+  hosts: newhost
+  remote_user: root
+
+# 
+# Memory: 2G
+# Disk: just /, 10G
+# CPUs: 2
+# needs nesting and keyctl
+#
+  tasks:
+          - name: apt update and upgrade
+            become: true
+            apt:
+                    autoclean: yes
+                    autoremove: yes
+                    update_cache: yes
+                    force_apt_get: yes
+                    upgrade: "safe"
+            register: packages_upgraded
+
+          - debug: var=packages_upgraded.stdout_lines
+          - debug: var=packages_upgraded.stderr_lines
+
+          - name: Install missing packages
+            become: true
+            apt:
+              pkg:
+                - ca-certificates
+                - gpg
+                - curl
+                - adduser
+                - libfontconfig1
+                - musl
+                - apt-transport-https
+                - software-properties-common
+                - wget
+              state: present
+          - name: copy certificate files
+            become: true
+            ansible.builtin.copy:
+              dest: /etc/ssl
+              src: /home/fw01/certificates/-.ch5.garf.de
+              mode: preserve
+
+          - name: add repository key for influxdb
+            become: true
+            ansible.builtin.apt_key:
+              url: https://repos.influxdata.com/influxdata-archive_compat.key
+
+          - name: add repository key for grafana
+            become: true
+            ansible.builtin.apt_key:
+              url: https://apt.grafana.com/gpg.key
+
+          - name: add repositories for influxdb
+            become: true
+            ansible.builtin.apt_repository:
+              repo: deb https://repos.influxdata.com/debian stable main
+
+          - name: add repositories for grafana
+            become: true
+            ansible.builtin.apt_repository:
+              repo: deb https://apt.grafana.com stable main
+
+
+          - name: Install influxdb
+            become: true
+            apt:
+              pkg:
+                - influxdb
+                - telegraf
+                - grafana
+
+
+

@@ -1,0 +1,28 @@
+---
+- name: update debian hosts
+  hosts: newhost
+  remote_user: ansible
+
+  tasks:
+          - name: apt update and upgrade
+            become: true
+            apt:
+                    autoclean: yes
+                    autoremove: yes
+                    update_cache: yes
+                    force_apt_get: yes
+                    upgrade: "safe"
+            register: apt_upgrade
+            async: 1000
+            poll: 0
+          - name: Check on apt upgrade
+            become: true
+            async_status:
+              jid: "{{ apt_upgrade.ansible_job_id }}"
+            register: job_result
+            until: job_result.finished
+            retries: 100
+            delay: 10
+
+
+

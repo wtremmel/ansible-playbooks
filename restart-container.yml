@@ -1,0 +1,19 @@
+# token 08fb41d8-9c72-423a-83d1-e5f8b8de8ad8
+# user root@pam!ansible
+#
+#
+#
+---
+- hosts: proxmox
+  remote_user: ansible
+  tasks:
+    - name: restart smokeping
+      community.general.proxmox:
+        vmid: 106
+        api_user: root@pam
+        api_token_id: ansible
+        api_token_secret: 08fb41d8-9c72-423a-83d1-e5f8b8de8ad8
+        api_host: pm01
+        state: restarted
+
+
