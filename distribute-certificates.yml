@@ -1,5 +1,5 @@
 ---
-- hosts: newhost
+- hosts: ubuntu
   remote_user: ansible
   tasks:
     - name: copy certificate files
@@ -8,3 +8,19 @@
         dest: /etc/ssl
         src: /home/fw01/certificates/-.ch5.garf.de
         mode: preserve
+      register: copied
+
+    - name: check if nginx exists
+      ignore_errors: true
+      become: true
+      shell: service nginx configtest
+      register: nginxok
+      when: copied is changed
+        
+    - name: restart nginx if it exist and certs changed
+      become: true
+      shell: service nginx restart
+      when:
+        - copied is changed
+        - nginxok is succeeded
+
