@@ -57,6 +57,7 @@
                 - containerd.io 
                 - docker-buildx-plugin
                 - docker-compose-plugin
+                - python3-docker
 
           - name: add wtremmel to docker group
             become: true
