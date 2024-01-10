@@ -1,0 +1,30 @@
+---
+- name: Update Upgrade Paperless
+  hosts: paperless
+  remote_user: wtremmel
+
+  tasks:
+          - name: apt update and upgrade
+            become: true
+            apt:
+                    autoclean: yes
+                    autoremove: yes
+                    update_cache: yes
+                    force_apt_get: yes
+                    upgrade: "safe"
+            register: packages_upgraded
+
+          - debug: var=packages_upgraded.stdout_lines
+          - debug: var=packages_upgraded.stderr_lines
+
+          - name: Check Docker Compose status
+            become: true
+            community.docker.docker_compose:
+              project_src: /home/wtremmel/paperless-ngx
+              pull: true
+              state: present
+            register: docker_changes
+
+          - debug: var=docker_changes.stdout_lines
+          - debug: var=docker_changes.stderr_lines
+
