@@ -15,6 +15,8 @@
             register: apt_upgrade
             async: 1000
             poll: 0
+          - debug: var=apt_upgrade.stdout_lines
+          - debug: var=apt_upgrade.stderr_lines
           - name: Check on apt upgrade
             become: true
             async_status:
