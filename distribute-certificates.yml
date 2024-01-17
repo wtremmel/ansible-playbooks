@@ -1,5 +1,5 @@
 ---
-- hosts: newhost
+- hosts: ubuntu
   remote_user: ansible
   tasks:
     - name: copy certificate files
