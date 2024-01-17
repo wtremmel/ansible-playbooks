@@ -7,6 +7,7 @@
 # Memory: 2G
 # Disk: just /, 10G
 # CPUs: 2
+# needs nesting and keyctl
 #
   tasks:
           - name: apt update and upgrade
@@ -29,6 +30,12 @@
                 - ca-certificates
                 - gpg
                 - curl
+                - adduser
+                - libfontconfig1
+                - musl
+                - apt-transport-https
+                - software-properties-common
+                - wget
               state: present
           - name: copy certificate files
             become: true
@@ -37,29 +44,34 @@
               src: /home/fw01/certificates/-.ch5.garf.de
               mode: preserve
 
-          - name: add repository key for docker
+          - name: add repository key for influxdb
             become: true
             ansible.builtin.apt_key:
-              url: https://download.docker.com/linux/debian/gpg
+              url: https://repos.influxdata.com/influxdata-archive_compat.key
 
-          - name: add repositories for docker
+          - name: add repository key for grafana
+            become: true
+            ansible.builtin.apt_key:
+              url: https://apt.grafana.com/gpg.key
+
+          - name: add repositories for influxdb
             become: true
             ansible.builtin.apt_repository:
-              repo: deb [arch=amd64 ] https://download.docker.com/linux/debian bookworm stable
+              repo: deb https://repos.influxdata.com/debian stable main
 
-          - name: Install docker
+          - name: add repositories for grafana
+            become: true
+            ansible.builtin.apt_repository:
+              repo: deb https://apt.grafana.com stable main
+
+
+          - name: Install influxdb
             become: true
             apt:
               pkg:
-                - docker-ce
-                - docker-ce-cli
-                - containerd.io 
-                - docker-buildx-plugin
-                - docker-compose-plugin
+                - influxdb
+                - telegraf
+                - grafana
 
-          - name: add wtremmel to docker group
-            become: true
-            user:
-              groups: docker
-              append: true
-              user: wtremmel
+
+
