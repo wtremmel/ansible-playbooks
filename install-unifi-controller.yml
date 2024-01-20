@@ -1,6 +1,6 @@
 ---
 - name: Install Netbox
-  hosts: newhost
+  hosts: unifi.ch5.garf.de
   remote_user: root
 
 # 
@@ -49,6 +49,11 @@
             ansible.builtin.apt_key:
               url: https://www.mongodb.org/static/pgp/server-4.4.pub
 
+          - name: add repository key for unifi poller
+            become: true
+            ansible.builtin.apt_key:
+              url: https://packagecloud.io/golift/pkgs/gpgkey
+
           - name: add repositories for unifi
             become: true
             ansible.builtin.apt_repository:
@@ -57,6 +62,10 @@
             become: true
             ansible.builtin.apt_repository:
               repo: deb https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.4 multiverse
+          - name: add repository for poller
+            become: true
+            ansible.builtin.apt_repository:
+              repo: deb https://packagecloud.io/golift/pkgs/ubuntu focal main
 
           - name: install old ssl package
             become: true
@@ -69,6 +78,7 @@
               pkg:
                 - mongodb-org-server
                 - unifi
+                - unpoller
 
           - name: redirect using iptables
             become: true
