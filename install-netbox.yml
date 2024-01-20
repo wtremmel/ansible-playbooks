@@ -1,6 +1,6 @@
 ---
 - name: Install Netbox
-  hosts: newhost
+  hosts: netbox.ch5.garf.de
   remote_user: root
 
 # Netbox needs a container with "nesting" enabled
